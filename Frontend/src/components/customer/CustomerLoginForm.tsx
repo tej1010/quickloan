@@ -34,7 +34,11 @@ export default function CustomerLoginForm() {
     setLoading(true);
     try {
       await verifyCustomerOtp(mobile, otp);
-      navigate("/customer/dashboard", { replace: true });
+      if (applyId) {
+        navigate(`/customer/apply?apply=${applyId}`, { replace: true });
+      } else {
+        navigate("/customer/dashboard", { replace: true });
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Invalid OTP");
     } finally {

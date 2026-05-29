@@ -5,6 +5,7 @@ import type {
   CustomerLoan,
   Disbursement,
   EmiScheduleItem,
+  IncompleteLoanApplication,
   Lead,
   LoanApplication,
   Notification,
@@ -32,6 +33,33 @@ export const mockCustomerStats: CustomerDashboardStats = {
   outstandingAmount: 19992,
   nextEmiAmount: 2499,
   nextEmiDate: "2026-06-05",
+  hasIncompleteApplication: true,
+};
+
+export const mockIncompleteApplication: IncompleteLoanApplication = {
+  sessionId: "APP-SESS-DEMO01",
+  applicationNo: "APP-2026-001252",
+  productName: "Samsung",
+  productModel: "Galaxy S24 Ultra",
+  loanAmount: 52000,
+  tenure: 12,
+  emiAmount: 4780,
+  interestRate: 18,
+  vendorName: "Mobile World Electronics",
+  progressStep: 0,
+  customerMobile: "9876543210",
+  customerName: "Tejpal Singh Rathore",
+  customerDetails: {
+    name: "Tejpal Singh Rathore",
+    mobile: "9876543210",
+    email: "tejpal@email.com",
+    pan: "ABCTE1234F",
+    aadhaar: "XXXX-XXXX-7891",
+    address: "42 Park Street, C-Scheme",
+    city: "Jaipur",
+    state: "Rajasthan",
+    pincode: "302001",
+  },
 };
 
 export const mockLeads: Lead[] = [

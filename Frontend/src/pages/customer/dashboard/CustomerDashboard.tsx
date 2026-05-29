@@ -1,39 +1,60 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router";
+import { Link, useLocation, useNavigate } from "react-router";
 import PageMeta from "../../../components/common/PageMeta";
 import ProgressRing from "../../../components/customer/mobile/ProgressRing";
+import IncompleteApplicationCard from "../../../components/customer/mobile/IncompleteApplicationCard";
+import NewApplicationCard from "../../../components/customer/mobile/NewApplicationCard";
 import { HomeSkeleton } from "../../../components/customer/mobile/Skeleton";
 import { formatINR, formatDateShort, dueCountdownText } from "../../../components/customer/mobile/utils";
 import { useAuth } from "../../../context/AuthContext";
 import { customerService } from "../../../services/customerService";
+import { customerApplicationService } from "../../../services/customerApplicationService";
 import { mockCustomerLoans } from "../../../services/mockData";
-import type { CustomerDashboardStats } from "../../../types";
+import type { CustomerDashboardStats, IncompleteLoanApplication } from "../../../types";
 
 const quickActions = [
+  { label: "New Loan", icon: "✨", path: "/customer/apply?new=1" },
   { label: "EMI Schedule", icon: "📅", path: "/customer/loans/1/schedule" },
   { label: "Documents", icon: "📄", path: "/customer/documents" },
-  { label: "Statements", icon: "📊", path: "/customer/documents" },
   { label: "Help", icon: "💬", path: "/customer/profile" },
 ];
 
 export default function CustomerDashboard() {
   const { user } = useAuth();
   const [stats, setStats] = useState<CustomerDashboardStats | null>(null);
+  const [incompleteApp, setIncompleteApp] = useState<IncompleteLoanApplication | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const location = useLocation();
   const loan = mockCustomerLoans[0];
 
   useEffect(() => {
-    customerService.getDashboardStats().then((data) => {
+    let active = true;
+
+    const load = async () => {
+      setLoading(true);
+      const [data, incomplete] = await Promise.all([
+        customerService.getDashboardStats(),
+        user?.mobile
+          ? customerApplicationService.getIncompleteApplication(user.mobile)
+          : Promise.resolve(null),
+      ]);
+      if (!active) return;
       setStats(data);
+      setIncompleteApp(incomplete);
       setLoading(false);
-    });
-  }, []);
+    };
+
+    load();
+    return () => {
+      active = false;
+    };
+  }, [user?.mobile, location.pathname, location.key]);
 
   if (loading) {
     return (
       <>
-        <PageMeta title="Home | Fintech" description="Customer home" />
+        <PageMeta title="Home | Quick Loan" description="Customer home" />
         <HomeSkeleton />
       </>
     );
@@ -43,11 +64,34 @@ export default function CustomerDashboard() {
 
   return (
     <>
-      <PageMeta title="Home | Fintech" description="Customer home" />
+      <PageMeta title="Home | Quick Loan" description="Customer home" />
       <div className="px-5 pt-6 pb-4">
         <p className="text-sm text-gray-500">Good {new Date().getHours() < 12 ? "morning" : "evening"}</p>
         <h1 className="text-2xl font-bold text-gray-900">Hello {firstName} 👋</h1>
       </div>
+
+      {incompleteApp && (
+        <div className="px-5 mb-5">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-sm font-semibold text-gray-900">Incomplete Application</p>
+            <span className="text-xs font-medium text-amber-600">Action required</span>
+          </div>
+          <IncompleteApplicationCard application={incompleteApp} />
+          <button
+            type="button"
+            onClick={() => navigate("/customer/apply?new=1")}
+            className="w-full mt-3 py-3 text-sm font-medium text-brand-600"
+          >
+            Start a different application
+          </button>
+        </div>
+      )}
+
+      {!incompleteApp && (
+        <div className="px-5 mb-5">
+          <NewApplicationCard />
+        </div>
+      )}
 
       <div className="px-5">
         <div className="relative overflow-hidden p-5 rounded-3xl bg-gradient-to-br from-gray-900 via-gray-800 to-brand-900 text-white shadow-xl shadow-gray-900/20">

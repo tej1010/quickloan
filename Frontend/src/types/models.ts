@@ -203,6 +203,34 @@ export interface CustomerDashboardStats {
   outstandingAmount: number;
   nextEmiAmount: number;
   nextEmiDate: string;
+  hasIncompleteApplication?: boolean;
+}
+
+export interface IncompleteLoanApplication {
+  sessionId: string;
+  applicationNo: string;
+  productName: string;
+  productModel: string;
+  loanAmount: number;
+  tenure: number;
+  emiAmount: number;
+  interestRate: number;
+  vendorName: string;
+  progressStep: number;
+  customerMobile: string;
+  customerName: string;
+  isSelfInitiated?: boolean;
+  customerDetails: {
+    name: string;
+    mobile: string;
+    email: string;
+    pan: string;
+    aadhaar: string;
+    address: string;
+    city: string;
+    state: string;
+    pincode: string;
+  };
 }
 
 export interface PaginatedResponse<T> {

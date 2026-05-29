@@ -2,10 +2,13 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import PageMeta from "../../../components/common/PageMeta";
 import StatusChip from "../../../components/customer/mobile/StatusChip";
+import IncompleteApplicationCard from "../../../components/customer/mobile/IncompleteApplicationCard";
 import { LoanListSkeleton } from "../../../components/customer/mobile/Skeleton";
 import { formatINR } from "../../../components/customer/mobile/utils";
+import { useAuth } from "../../../context/AuthContext";
 import { customerService } from "../../../services/customerService";
-import type { CustomerLoan } from "../../../types";
+import { customerApplicationService } from "../../../services/customerApplicationService";
+import type { CustomerLoan, IncompleteLoanApplication } from "../../../types";
 
 function getLoanChip(loan: CustomerLoan) {
   if (loan.status === "closed") return "closed" as const;
@@ -14,23 +17,39 @@ function getLoanChip(loan: CustomerLoan) {
 }
 
 export default function CustomerLoans() {
+  const { user } = useAuth();
   const [loans, setLoans] = useState<CustomerLoan[]>([]);
+  const [incompleteApp, setIncompleteApp] = useState<IncompleteLoanApplication | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    customerService.getLoans().then((data) => {
+    const load = async () => {
+      const [data, incomplete] = await Promise.all([
+        customerService.getLoans(),
+        user?.mobile
+          ? customerApplicationService.getIncompleteApplication(user.mobile)
+          : Promise.resolve(null),
+      ]);
       setLoans(data);
+      setIncompleteApp(incomplete);
       setLoading(false);
-    });
-  }, []);
+    };
+    load();
+  }, [user?.mobile]);
 
   return (
     <>
-      <PageMeta title="My Loans | Fintech" description="Your loans" />
+      <PageMeta title="My Loans | Quick Loan" description="Your loans" />
       <div className="px-5 pt-6 pb-4">
         <h1 className="text-2xl font-bold text-gray-900">My Loans</h1>
         <p className="text-sm text-gray-500 mt-1">{loans.length} loan{loans.length !== 1 ? "s" : ""} found</p>
       </div>
+
+      {incompleteApp && (
+        <div className="px-5 mb-4">
+          <IncompleteApplicationCard application={incompleteApp} compact />
+        </div>
+      )}
 
       {loading ? (
         <LoanListSkeleton />
