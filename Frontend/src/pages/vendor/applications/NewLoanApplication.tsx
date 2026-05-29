@@ -40,6 +40,9 @@ import {
   emptyEmploymentDetails,
 } from "../../../services/loanApplicationService";
 import { vendorService } from "../../../services/vendorService";
+import { useAuth } from "../../../context/AuthContext";
+import { saveVendorApplicationSession } from "../../../services/applicationSessionApi";
+import { buildVendorSessionPayload } from "../../../services/vendorApplicationSession";
 
 const loanSteps = [
   { id: 1, title: "Employment", description: "Customer employment and income details" },
@@ -90,6 +93,38 @@ export default function NewLoanApplication() {
   const [applicationSessionId, setApplicationSessionId] = useState("");
   const [initializing, setInitializing] = useState(!!draftId);
   const navigate = useNavigate();
+  const { user: vendorUser } = useAuth();
+
+  useEffect(() => {
+    if (!applicationSessionId || !otpVerified || mobile.replace(/\D/g, "").length !== 10) return;
+
+    saveVendorApplicationSession(
+      buildVendorSessionPayload({
+        sessionId: applicationSessionId,
+        mobile,
+        vendorName: vendorUser?.name ?? "Mobile World Electronics",
+        vendorStep: step,
+        applicationNo: resumeApplicationNo || undefined,
+        customerDetails,
+        device,
+        tenure,
+        loanSummary,
+        loanId: loanId || undefined,
+      }),
+    );
+  }, [
+    applicationSessionId,
+    otpVerified,
+    mobile,
+    step,
+    customerDetails,
+    device,
+    tenure,
+    loanSummary,
+    loanId,
+    resumeApplicationNo,
+    vendorUser?.name,
+  ]);
 
   useEffect(() => {
     if (!draftId) return;

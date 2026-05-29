@@ -7,7 +7,10 @@ export function createApp() {
 
   app.use(
     cors({
-      origin: process.env.CORS_ORIGIN || "http://localhost:5173",
+      origin: process.env.CORS_ORIGIN?.split(",") || [
+        "http://localhost:5173",
+        "http://localhost:4173",
+      ],
     }),
   );
   app.use(express.json());

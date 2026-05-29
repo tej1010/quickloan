@@ -1,6 +1,10 @@
 import type { IncompleteLoanApplication, User } from "../types";
 import { mockIncompleteApplication } from "./mockData";
 import { generateApplicationSessionId } from "./loanApplicationService";
+import {
+  applicationSessionApi,
+  loadVendorApplicationForCustomer,
+} from "./applicationSessionApi";
 
 const COMPLETED_KEY_PREFIX = "quickloan_incomplete_application_done";
 const DRAFT_KEY = "quickloan_customer_application_draft";
@@ -71,19 +75,54 @@ export const customerApplicationService = {
   async saveDraft(application: IncompleteLoanApplication): Promise<void> {
     await delay(100);
     saveDraft(application);
+    if (!application.isSelfInitiated) {
+      try {
+        await applicationSessionApi.updateSession(application.sessionId, {
+          sessionId: application.sessionId,
+          customerMobile: application.customerMobile,
+          customerProgressStep: application.progressStep,
+          productName: application.productName,
+          productModel: application.productModel,
+          loanAmount: application.loanAmount,
+          tenure: application.tenure,
+          emiAmount: application.emiAmount,
+          customerName: application.customerName,
+          customerDetails: application.customerDetails,
+        });
+      } catch {
+        // ignore sync errors in demo mode
+      }
+    }
   },
 
-  async markApplicationComplete(mobile?: string): Promise<void> {
+  async markApplicationComplete(mobile?: string, sessionId?: string): Promise<void> {
     await delay(200);
     if (mobile) localStorage.setItem(completedKey(mobile), "true");
     localStorage.removeItem(DRAFT_KEY);
+    if (sessionId) {
+      try {
+        await applicationSessionApi.updateSession(sessionId, {
+          sessionId,
+          customerMobile: mobile ?? "",
+          customerProgressStep: 99,
+        });
+      } catch {
+        // ignore
+      }
+    }
   },
 
   async getIncompleteBySession(sessionId: string, mobile?: string): Promise<IncompleteLoanApplication | null> {
     await delay(300);
     if (mobile && isApplicationCompleted(mobile)) return null;
 
-    const draft = readDraft();
+    const fromServer = await loadVendorApplicationForCustomer(sessionId, mobile);
+    if (fromServer) {
+      saveDraft(fromServer);
+      return fromServer;
+    }
+
+    const draft = readDraft(mobile);
     if (draft?.sessionId === sessionId) return draft;
 
     if (sessionId === mockIncompleteApplication.sessionId) {

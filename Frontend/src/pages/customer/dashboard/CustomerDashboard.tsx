@@ -3,7 +3,6 @@ import { Link, useLocation, useNavigate } from "react-router";
 import PageMeta from "../../../components/common/PageMeta";
 import ProgressRing from "../../../components/customer/mobile/ProgressRing";
 import IncompleteApplicationCard from "../../../components/customer/mobile/IncompleteApplicationCard";
-import NewApplicationCard from "../../../components/customer/mobile/NewApplicationCard";
 import { HomeSkeleton } from "../../../components/customer/mobile/Skeleton";
 import { formatINR, formatDateShort, dueCountdownText } from "../../../components/customer/mobile/utils";
 import { useAuth } from "../../../context/AuthContext";
@@ -13,7 +12,6 @@ import { mockCustomerLoans } from "../../../services/mockData";
 import type { CustomerDashboardStats, IncompleteLoanApplication } from "../../../types";
 
 const quickActions = [
-  { label: "New Loan", icon: "✨", path: "/customer/apply?new=1" },
   { label: "EMI Schedule", icon: "📅", path: "/customer/loans/1/schedule" },
   { label: "Documents", icon: "📄", path: "/customer/documents" },
   { label: "Help", icon: "💬", path: "/customer/profile" },
@@ -77,19 +75,6 @@ export default function CustomerDashboard() {
             <span className="text-xs font-medium text-amber-600">Action required</span>
           </div>
           <IncompleteApplicationCard application={incompleteApp} />
-          <button
-            type="button"
-            onClick={() => navigate("/customer/apply?new=1")}
-            className="w-full mt-3 py-3 text-sm font-medium text-brand-600"
-          >
-            Start a different application
-          </button>
-        </div>
-      )}
-
-      {!incompleteApp && (
-        <div className="px-5 mb-5">
-          <NewApplicationCard />
         </div>
       )}
 
@@ -144,6 +129,30 @@ export default function CustomerDashboard() {
           </div>
           <ProgressRing value={loan.paidEmis} max={loan.tenure} size={88} stroke={8} />
         </div>
+      </div>
+
+      <div className="px-5 mt-4 grid gap-3">
+        <button
+          type="button"
+          onClick={() => navigate("/customer/apply?new=1")}
+          className="w-full py-4 text-sm font-semibold text-white rounded-2xl bg-gradient-to-r from-brand-600 to-brand-500 active:scale-[0.99] transition-transform"
+        >
+          Apply for New Loan
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            if (!incompleteApp) return;
+            const path = incompleteApp.isSelfInitiated
+              ? "/customer/apply"
+              : `/customer/apply?apply=${incompleteApp.sessionId}`;
+            navigate(path);
+          }}
+          disabled={!incompleteApp}
+          className="w-full py-4 text-sm font-semibold rounded-2xl ring-1 transition-transform active:scale-[0.99] disabled:opacity-40 disabled:cursor-not-allowed bg-amber-100 text-amber-950 ring-amber-400"
+        >
+          Complete Existing Application
+        </button>
       </div>
 
       <div className="px-5 mt-5">

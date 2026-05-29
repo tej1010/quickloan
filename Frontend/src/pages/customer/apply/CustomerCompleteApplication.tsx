@@ -80,6 +80,9 @@ export default function CustomerCompleteApplication() {
       let app: IncompleteLoanApplication | null = null;
       if (sessionId) {
         app = await customerApplicationService.getIncompleteBySession(sessionId, user?.mobile);
+        if (!app && user?.mobile) {
+          setError("Application link expired or not found. Ask the vendor to share a new QR code.");
+        }
       } else if (user?.mobile) {
         app = await customerApplicationService.getIncompleteApplication(user.mobile);
       }
@@ -196,7 +199,10 @@ export default function CustomerCompleteApplication() {
         setError("Complete digital consent via OTP");
         return;
       }
-      await customerApplicationService.markApplicationComplete(application.customerMobile);
+      await customerApplicationService.markApplicationComplete(
+        application.customerMobile,
+        application.sessionId,
+      );
       setDone(true);
       return;
     }
@@ -217,13 +223,17 @@ export default function CustomerCompleteApplication() {
       <>
         <MobileHeader title="Loan Application" showBack />
         <div className="px-5 py-16 text-center">
-          <p className="text-gray-500">No application in progress.</p>
-          <button
-            onClick={() => navigate("/customer/apply?new=1")}
-            className="w-full py-4 mt-6 text-sm font-semibold text-white rounded-2xl bg-brand-600"
-          >
-            Start New Application
-          </button>
+          <p className="text-gray-500">
+            {error || (sessionId ? "Application not found. Ask the vendor to share a new QR code." : "No application in progress.")}
+          </p>
+          {!sessionId && (
+            <button
+              onClick={() => navigate("/customer/apply?new=1")}
+              className="w-full py-4 mt-6 text-sm font-semibold text-white rounded-2xl bg-brand-600"
+            >
+              Start New Application
+            </button>
+          )}
         </div>
       </>
     );

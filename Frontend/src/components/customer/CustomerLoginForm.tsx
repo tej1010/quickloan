@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { useAuth } from "../../context/AuthContext";
 
@@ -6,17 +6,37 @@ export default function CustomerLoginForm() {
   const [searchParams] = useSearchParams();
   const applyId = searchParams.get("apply");
   const mobileFromLink = searchParams.get("mobile") || "";
-  const [mobile, setMobile] = useState(mobileFromLink.replace(/\D/g, "").slice(0, 10));
+  const linkedMobile = mobileFromLink.replace(/\D/g, "").slice(0, 10);
+  const isQrFlow = !!(applyId && linkedMobile);
+
+  const [mobile, setMobile] = useState(linkedMobile);
   const [otp, setOtp] = useState("");
-  const [step, setStep] = useState<"mobile" | "otp">("mobile");
+  const [step, setStep] = useState<"mobile" | "otp">(isQrFlow ? "otp" : "mobile");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const { sendCustomerOtp, verifyCustomerOtp } = useAuth();
+  const { sendCustomerOtp, verifyCustomerOtp, user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (isAuthenticated && user?.role === "customer" && applyId) {
+      navigate(`/customer/apply?apply=${applyId}`, { replace: true });
+    }
+  }, [isAuthenticated, user, applyId, navigate]);
+
+  useEffect(() => {
+    if (!isQrFlow || step !== "otp") return;
+    sendCustomerOtp(linkedMobile).catch(() => {
+      setStep("mobile");
+    });
+  }, [isQrFlow, linkedMobile, sendCustomerOtp, step]);
 
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    if (isQrFlow && mobile !== linkedMobile) {
+      setError("Use the mobile number linked to this QR application");
+      return;
+    }
     setLoading(true);
     try {
       await sendCustomerOtp(mobile);
@@ -31,6 +51,10 @@ export default function CustomerLoginForm() {
   const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    if (isQrFlow && mobile !== linkedMobile) {
+      setError("This application link is for a different mobile number");
+      return;
+    }
     setLoading(true);
     try {
       await verifyCustomerOtp(mobile, otp);
@@ -62,7 +86,9 @@ export default function CustomerLoginForm() {
         <div className="p-6 bg-white rounded-3xl shadow-xl shadow-brand-900/10">
           {applyId && (
             <div className="p-3 mb-4 text-sm rounded-2xl bg-brand-50 text-brand-700 ring-1 ring-brand-100">
-              Continue your loan application shared by the vendor.
+              {isQrFlow
+                ? `Continue your loan application for +91 ${linkedMobile}. Verify OTP to proceed.`
+                : "Continue your loan application shared by the vendor."}
             </div>
           )}
           <h2 className="text-lg font-semibold text-gray-900">
@@ -85,8 +111,9 @@ export default function CustomerLoginForm() {
                     type="tel"
                     placeholder="9876543210"
                     value={mobile}
+                    readOnly={isQrFlow}
                     onChange={(e) => setMobile(e.target.value.replace(/\D/g, "").slice(0, 10))}
-                    className="flex-1 text-lg font-semibold text-gray-900 bg-transparent outline-none placeholder:text-gray-300"
+                    className={`flex-1 text-lg font-semibold text-gray-900 bg-transparent outline-none placeholder:text-gray-300 ${isQrFlow ? "opacity-80" : ""}`}
                   />
                 </div>
               </div>
@@ -117,11 +144,13 @@ export default function CustomerLoginForm() {
                 disabled={loading || otp.length !== 6}
                 className="w-full py-4 text-base font-semibold text-white rounded-2xl bg-brand-600 disabled:opacity-40"
               >
-                {loading ? "Verifying..." : "Verify & Continue"}
+                {loading ? "Verifying..." : "Verify & Continue Application"}
               </button>
-              <button type="button" onClick={() => setStep("mobile")} className="w-full text-sm text-brand-600 font-medium">
-                Change number
-              </button>
+              {!isQrFlow && (
+                <button type="button" onClick={() => setStep("mobile")} className="w-full text-sm text-brand-600 font-medium">
+                  Change number
+                </button>
+              )}
             </form>
           )}
           <p className="mt-4 text-xs text-center text-gray-400">Demo OTP: 123456</p>

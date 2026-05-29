@@ -35,7 +35,7 @@ export default function CustomerApplicationLinkShare({
           Share link with customer
         </p>
         <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-          Customer can open the link on their phone to continue KYC and consent steps.
+          Customer scans the QR on their phone → logs in → continues KYC, loan review, and consent on their device.
         </p>
         <p className="mt-2 text-xs font-mono text-gray-600 dark:text-gray-300 break-all">{link}</p>
 

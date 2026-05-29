@@ -2,12 +2,40 @@
   command = "npm ci && npm run build -w @fintech/frontend"
   publish = "Frontend/dist"
 
+[functions]
+  directory = "netlify/functions"
+
 [build.environment]
   NODE_VERSION = "20"
   NPM_CONFIG_AUDIT = "false"
   NPM_CONFIG_FUND = "false"
 
+# API for vendor → customer QR application handoff
+[[redirects]]
+  from = "/api/applications/sessions/:sessionId"
+  to = "/.netlify/functions/application-session?sessionId=:sessionId"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/applications/sessions"
+  to = "/.netlify/functions/application-session"
+  status = 200
+  force = true
+
+# SPA fallback — required for /customer/login, /vendor/dashboard, etc.
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
+
+# Don't cache index.html so new deploys load fresh chunk references
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
