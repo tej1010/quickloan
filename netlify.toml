@@ -1,3 +1,4 @@
+# Monorepo: build from repo root, publish Vite output from Frontend/
 [build]
   command = "npm ci && npm run build -w @fintech/frontend"
   publish = "Frontend/dist"
@@ -29,7 +30,6 @@
   to = "/index.html"
   status = 200
 
-# Don't cache index.html so new deploys load fresh chunk references
 [[headers]]
   for = "/index.html"
   [headers.values]
